@@ -20,45 +20,10 @@ interface SearchResult {
 }
 
 export default function Home() {
-  const [url, setUrl] = useState('');
   const [caption, setCaption] = useState('');
   const [loading, setLoading] = useState(false);
-  const [extracting, setExtracting] = useState(false);
   const [result, setResult] = useState<SearchResult | null>(null);
   const [error, setError] = useState('');
-  const [platform, setPlatform] = useState<string | null>(null);
-
-  const handleExtract = async () => {
-    if (!url.trim()) {
-      setError('Cole o link do post');
-      return;
-    }
-
-    setExtracting(true);
-    setError('');
-
-    try {
-      const response = await fetch('/api/extract', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.error || 'Erro ao extrair legenda');
-        return;
-      }
-
-      setCaption(data.caption);
-      setPlatform(data.platform);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao extrair');
-    } finally {
-      setExtracting(false);
-    }
-  };
 
   const handleSearch = async () => {
     if (!caption.trim()) {
@@ -74,7 +39,7 @@ export default function Home() {
       const response = await fetch('/api/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ caption, url }),
+        body: JSON.stringify({ caption }),
       });
 
       const data = await response.json();
@@ -102,54 +67,21 @@ export default function Home() {
         </p>
 
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-8 border border-white/20">
-          {/* URL Input */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Link do Post
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://www.instagram.com/p/... ou https://www.facebook.com/..."
-                className="flex-1 px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-              />
-              <button
-                onClick={handleExtract}
-                disabled={extracting || !url.trim()}
-                className="px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                {extracting ? (
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : (
-                  'Extrair'
-                )}
-              </button>
-            </div>
-            {platform && (
-              <p className="text-xs text-purple-400 mt-1">
-                Detectado: {platform === 'instagram' ? 'Instagram' : 'Facebook'}
-              </p>
-            )}
-          </div>
-
           {/* Caption Textarea */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Legenda do Post
-              <span className="text-gray-500 text-xs ml-2">(extraida automaticamente ou cole manualmente)</span>
             </label>
             <textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
-              placeholder="Cole o link acima e clique em Extrair, ou cole a legenda manualmente aqui..."
-              rows={4}
+              placeholder="Cole aqui a legenda do post que voce quer verificar..."
+              rows={5}
               className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
             />
+            <p className="text-gray-500 text-xs mt-2">
+              Copie a legenda diretamente do Instagram ou Facebook e cole acima
+            </p>
           </div>
 
           {/* Search Button */}
@@ -192,13 +124,13 @@ export default function Home() {
             </div>
 
             <p className="text-gray-400 text-sm mb-4">
-              Termos buscados: <span className="text-purple-400">{result.searchTerms}</span>
+              Termos buscados: <span className="text-purple-400 break-all">{result.searchTerms.substring(0, 100)}{result.searchTerms.length > 100 ? '...' : ''}</span>
             </p>
 
             {result.ads.length === 0 ? (
               <div className="text-center py-8">
                 <div className="text-6xl mb-4">&#128269;</div>
-                <p className="text-gray-400">Nenhum anuncio ativo encontrado com esses termos</p>
+                <p className="text-gray-400">Nenhum anuncio encontrado com essa legenda</p>
                 <p className="text-gray-500 text-sm mt-2">Isso pode significar que o post nao esta sendo anunciado</p>
               </div>
             ) : (
