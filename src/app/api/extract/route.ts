@@ -131,8 +131,9 @@ export async function POST(request: NextRequest) {
     if (!caption) {
       return NextResponse.json(
         {
-          error: 'Nao foi possivel extrair a legenda automaticamente. Cole manualmente.',
-          platform
+          error: `Falha ao extrair legenda do ${platform === 'instagram' ? 'Instagram' : 'Facebook'}. Verifique se o link esta correto e o perfil e publico. Cole a legenda manualmente.`,
+          platform,
+          extracted: false
         },
         { status: 404 }
       );

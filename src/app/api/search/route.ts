@@ -89,16 +89,18 @@ export async function POST(request: NextRequest) {
       'ad_snapshot_url',
       'ad_creative_bodies',
       'ad_creative_link_captions',
-      'ad_creative_link_titles'
+      'ad_creative_link_titles',
+      'ad_delivery_start_time',
+      'ad_delivery_stop_time'
     ].join(',');
 
     const params = new URLSearchParams({
       search_terms: searchTerms,
       ad_reached_countries: "['BR']",
-      ad_active_status: 'ACTIVE',
+      ad_active_status: 'ALL',
       fields: fields,
       access_token: META_ACCESS_TOKEN,
-      limit: '25'
+      limit: '50'
     });
 
     const apiUrl = `https://graph.facebook.com/v19.0/ads_archive?${params.toString()}`;
