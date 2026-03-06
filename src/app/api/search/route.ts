@@ -11,53 +11,20 @@ interface Ad {
   ad_creative_link_titles?: string[];
 }
 
-function extractKeywords(caption: string): string {
-  // Remove emojis, hashtags, mentions, URLs
-  let cleaned = caption
-    .replace(/[\u{1F600}-\u{1F6FF}]/gu, '') // emojis
-    .replace(/#\w+/g, '') // hashtags
-    .replace(/@\w+/g, '') // mentions
+function cleanCaption(caption: string): string {
+  // Remove only emojis and URLs, keep the rest
+  return caption
+    .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // emojis
+    .replace(/[\u{2600}-\u{26FF}]/gu, '') // symbols
+    .replace(/[\u{2700}-\u{27BF}]/gu, '') // dingbats
     .replace(/https?:\/\/\S+/g, '') // URLs
-    .replace(/[^\w\sáéíóúâêîôûãõàèìòùäëïöüç]/gi, ' ') // special chars
-    .toLowerCase();
-
-  // Common Portuguese stopwords
-  const stopwords = new Set([
-    'a', 'o', 'e', 'de', 'da', 'do', 'em', 'um', 'uma', 'para', 'com', 'que',
-    'na', 'no', 'se', 'os', 'as', 'por', 'mais', 'como', 'mas', 'foi', 'ao',
-    'ele', 'das', 'tem', 'seu', 'sua', 'ou', 'ser', 'quando', 'muito', 'nos',
-    'ja', 'eu', 'tambem', 'so', 'pelo', 'pela', 'ate', 'isso', 'ela', 'entre',
-    'era', 'depois', 'sem', 'mesmo', 'aos', 'ter', 'seus', 'quem', 'nas', 'me',
-    'esse', 'eles', 'voce', 'essa', 'num', 'nem', 'suas', 'meu', 'minha', 'numa',
-    'pelos', 'elas', 'havia', 'seja', 'qual', 'sera', 'nos', 'tenho', 'lhe',
-    'deles', 'essas', 'esses', 'pelas', 'este', 'fosse', 'dele', 'tu', 'te',
-    'voces', 'vos', 'lhes', 'meus', 'minhas', 'teu', 'tua', 'teus', 'tuas',
-    'nosso', 'nossa', 'nossos', 'nossas', 'dela', 'delas', 'esta', 'estes',
-    'estas', 'aquele', 'aquela', 'aqueles', 'aquelas', 'isto', 'aquilo',
-    'estou', 'esta', 'estamos', 'estao', 'estive', 'esteve', 'estivemos',
-    'estiveram', 'estava', 'estavamos', 'estavam', 'estivera', 'estiveramos',
-    'esteja', 'estejamos', 'estejam', 'estivesse', 'estivessemos', 'estivessem',
-    'estiver', 'estivermos', 'estiverem', 'the', 'and', 'is', 'are', 'was',
-    'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
-    'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can'
-  ]);
-
-  // Extract words
-  const words = cleaned
-    .split(/\s+/)
-    .filter(word => word.length > 2 && !stopwords.has(word));
-
-  // Get unique words, prioritize longer ones
-  const uniqueWords = [...new Set(words)]
-    .sort((a, b) => b.length - a.length)
-    .slice(0, 5);
-
-  return uniqueWords.join(' ');
+    .replace(/\s+/g, ' ') // multiple spaces
+    .trim();
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { caption, url } = await request.json();
+    const { caption } = await request.json();
 
     if (!caption || caption.trim().length === 0) {
       return NextResponse.json(
@@ -73,12 +40,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Extract search keywords from caption
-    const searchTerms = extractKeywords(caption);
+    // Clean caption but keep all text
+    const searchTerms = cleanCaption(caption);
 
-    if (!searchTerms) {
+    if (!searchTerms || searchTerms.length < 3) {
       return NextResponse.json(
-        { error: 'Nao foi possivel extrair palavras-chave da legenda' },
+        { error: 'Legenda muito curta para buscar' },
         { status: 400 }
       );
     }
