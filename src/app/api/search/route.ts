@@ -12,14 +12,27 @@ interface Ad {
 }
 
 function cleanCaption(caption: string): string {
-  // Remove only emojis and URLs, keep the rest
-  return caption
+  // Remove emojis, URLs, and special characters that might cause API issues
+  let cleaned = caption
     .replace(/[\u{1F300}-\u{1F9FF}]/gu, '') // emojis
     .replace(/[\u{2600}-\u{26FF}]/gu, '') // symbols
     .replace(/[\u{2700}-\u{27BF}]/gu, '') // dingbats
+    .replace(/[\u{1F600}-\u{1F64F}]/gu, '') // emoticons
+    .replace(/[\u{1F680}-\u{1F6FF}]/gu, '') // transport
+    .replace(/[\u{2300}-\u{23FF}]/gu, '') // misc technical
+    .replace(/[\u{2B50}]/gu, '') // star
     .replace(/https?:\/\/\S+/g, '') // URLs
+    .replace(/[@#]\w+/g, '') // mentions and hashtags
+    .replace(/[^\w\s\u00C0-\u017Fáéíóúàèìòùâêîôûãõäëïöüçñ.,!?-]/gi, ' ') // keep only letters, numbers, accents
     .replace(/\s+/g, ' ') // multiple spaces
     .trim();
+
+  // Limit to 200 characters to avoid API issues
+  if (cleaned.length > 200) {
+    cleaned = cleaned.substring(0, 200).trim();
+  }
+
+  return cleaned;
 }
 
 export async function POST(request: NextRequest) {
@@ -72,11 +85,18 @@ export async function POST(request: NextRequest) {
 
     const apiUrl = `https://graph.facebook.com/v19.0/ads_archive?${params.toString()}`;
 
+    console.log('Search terms:', searchTerms);
+    console.log('API URL (without token):', apiUrl.replace(META_ACCESS_TOKEN, 'HIDDEN'));
+
     const response = await fetch(apiUrl);
     const data = await response.json();
 
+    console.log('API Response status:', response.status);
     if (data.error) {
-      console.error('Meta API Error:', data.error);
+      console.error('Meta API Error:', JSON.stringify(data.error, null, 2));
+    }
+
+    if (data.error) {
       return NextResponse.json(
         { error: data.error.message || 'Erro na API da Meta' },
         { status: 500 }
